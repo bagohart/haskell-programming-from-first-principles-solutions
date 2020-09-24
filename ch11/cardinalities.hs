@@ -1,0 +1,5 @@
+-- 1. 1
+-- 2. 3
+-- 3. 2^16 or something
+-- 4. Integer has no bound implementation, so it seems to be infinite. Int is big, but finite.
+-- 5. 2^8 = 256 BAM
