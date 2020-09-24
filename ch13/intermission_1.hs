@@ -1,0 +1,11 @@
+-- 1. forever, when
+-- 2. Data.Bits, Database.Blacktip.Types
+-- 3. ... types?
+-- 4. a)
+-- MV -> Control.Concurrent.MVar
+--      FPC -> Filesystem.Path.CurrentOS
+--      CC -> Control.Concurrent
+--    b)
+-- FS.writeFile -> Filesystem.writeFile
+--  c)
+--  Control.Monad
