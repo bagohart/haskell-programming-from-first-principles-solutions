@@ -37,5 +37,5 @@ instance Monad MaybeIO where
 -- this works. y-yaaaayyy... hm.
 -- ... how? I basically reimplemented Maybe (lol), but then refactored it to use the Traversable thing of Maybe (lol').
 -- and a lot of Functormagic. 
--- the concrete thing here was in fact only the use of 'runMaybeIO' to get some value.  (Traversable is not a superclass of Monad, so this is sort of concrete, too.)
+-- the concrete thing here was in fact only the use of 'runMaybeIO' to get some value.  (Traversable is not a superclass of Monad, so this is sort of concrete, too.) Actually, the runMaybeIO is trivial, this is just the wrapper. But the Traversable seems really powerful, because f (g (f (g a))) ~> f (f (g (g a))) ~> with join to f (g a) seems rather easy.
 -- hm.
