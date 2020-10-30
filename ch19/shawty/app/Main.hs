@@ -14,6 +14,8 @@ import Web.Scotty
 
 alphaNum :: String
 alphaNum = ['A'..'Z'] ++ ['0'..'9']
+-- use this to test the collision detection feature
+-- alphaNum = ['A']
 
 randomElement :: String -> IO Char
 randomElement xs = do
@@ -62,8 +64,18 @@ shortyFound tbs =
     , tbs, "</a>"
     ]
 
+shortyWontOverwrite :: TL.Text -> TL.Text
+shortyWontOverwrite uri = TL.concat
+    [
+    "Shawty almost overwrote "
+    , "<a href=\""
+    , uri, "\">"
+    , uri, "</a>"
+    ]
+
 app :: R.Connection -> ScottyM ()
 app rConn = do
+    -- save a uri
     get "/" $ do
         uri <- param "uri"
         let parsedUri :: Maybe URI
@@ -73,9 +85,19 @@ app rConn = do
                 shawty <- liftIO shortyGen
                 let shorty = BC.pack shawty
                     uri' = encodeUtf8 (TL.toStrict uri)
-                resp <- liftIO (saveURI rConn shorty uri')
-                html (shortyCreated resp shawty)
+                -- first shawty exercise: prevent overwriting of short URIs
+                -- aka collision detection
+                oldShawty <- liftIO (getURI rConn shorty)
+                case oldShawty of
+                  Right (Just bs) -> 
+                      html (shortyWontOverwrite bsLol)
+                        where bsLol :: TL.Text
+                              bsLol = TL.fromStrict (decodeUtf8 bs)
+                  otherwise -> do
+                    resp <- liftIO (saveURI rConn shorty uri')
+                    html (shortyCreated resp shawty)
             Nothing -> text (shortyAintUri uri)
+    -- fetch a uri
     get "/:short" $ do
         short <- param "short"
         uri <- liftIO (getURI rConn short)
