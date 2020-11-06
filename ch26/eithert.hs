@@ -38,3 +38,7 @@ eitherT f g (EitherT meea) = meea >>= (\eea -> either f g eea)
 instance MonadTrans (EitherT e) where 
     lift :: (Monad m) => m a -> EitherT e m a
     lift = EitherT . liftM Right
+
+instance (MonadIO m) => MonadIO (EitherT e m) where 
+    liftIO :: IO a -> EitherT e m a
+    liftIO = lift . liftIO

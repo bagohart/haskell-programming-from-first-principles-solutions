@@ -40,3 +40,10 @@ instance MonadTrans (StateT s) where
         let re :: (Monad m) => a -> m a
             re = return
         re (a,s)
+
+instance (MonadIO m) => MonadIO (StateT s m) where 
+    liftIO :: IO a -> StateT s m a
+    liftIO = lift . liftIO
+    -- liftIO = lift . lOL
+    --     where lOL :: (MonadIO m) => IO a -> m a
+    --           lOL = liftIO

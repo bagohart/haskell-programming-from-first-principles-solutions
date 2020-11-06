@@ -25,3 +25,9 @@ instance (Monad m) => Monad (MaybeT m) where
 instance MonadTrans MaybeT where 
     lift :: Monad m => m a -> MaybeT m a
     lift = MaybeT . liftM Just
+
+instance (MonadIO m) => MonadIO (MaybeT m) where 
+    liftIO :: IO a -> MaybeT m a
+    liftIO = lift . liftIO
+    -- inlined definition of lift:
+    -- liftIO = (MaybeT . fmap Just) . liftIO
