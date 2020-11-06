@@ -1,0 +1,64 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: dba8a8e20280aa2dff4b8e0bc4d507ac3fd732bf7f77b401b1ebb345abd8ab6a
+
+name:           scotty-hello-world
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/githubuser/scotty-hello-world#readme>
+homepage:       https://github.com/githubuser/scotty-hello-world#readme
+bug-reports:    https://github.com/githubuser/scotty-hello-world/issues
+author:         Author name here
+maintainer:     example@example.com
+copyright:      2020 Author name here
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    ChangeLog.md
+
+source-repository head
+  type: git
+  location: https://github.com/githubuser/scotty-hello-world
+
+library
+  exposed-modules:
+      Lib
+  other-modules:
+      Paths_scotty_hello_world
+  hs-source-dirs:
+      src
+  build-depends:
+      base >=4.7 && <5
+  default-language: Haskell2010
+
+executable scotty-hello-world-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_scotty_hello_world
+  hs-source-dirs:
+      app
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , scotty-hello-world
+    , scotty
+    , transformers
+  default-language: Haskell2010
+
+test-suite scotty-hello-world-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_scotty_hello_world
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , scotty-hello-world
+  default-language: Haskell2010

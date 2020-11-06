@@ -1,5 +1,8 @@
 {-# LANGUAGE InstanceSigs #-}
 
+import Control.Monad.Trans
+import Control.Monad
+
 newtype MaybeT m a = MaybeT { runMaybeT :: m (Maybe a) }
 
 instance (Functor m) => Functor (MaybeT m) where 
@@ -18,3 +21,7 @@ instance (Monad m) => Monad (MaybeT m) where
                              (Just a) -> runMaybeT (f a))
 
     -- MaybeT m a ~> m (Maybe a) >>= (ma -> m (Maybe b)) ~> m (Maybe b) ~> MaybeT m b
+
+instance MonadTrans MaybeT where 
+    lift :: Monad m => m a -> MaybeT m a
+    lift = MaybeT . liftM Just

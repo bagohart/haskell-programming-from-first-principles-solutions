@@ -1,5 +1,8 @@
 {-# LANGUAGE InstanceSigs #-}
 
+import Control.Monad.Trans
+import Control.Monad
+
 newtype StateT s m a = StateT { runStateT :: s -> m (a,s) }
 
 instance (Functor m) => Functor (StateT s m) where 
@@ -27,3 +30,13 @@ instance (Monad m) => Monad (StateT s m) where
         (a,s') <- smas s
         (b,s'') <- (runStateT $ f a) s'
         return (b,s'')
+
+---
+
+instance MonadTrans (StateT s) where 
+    lift :: (Monad m) => m a -> StateT s m a
+    lift m = StateT $ \s -> do
+        a <- m
+        let re :: (Monad m) => a -> m a
+            re = return
+        re (a,s)
