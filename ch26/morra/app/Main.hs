@@ -3,6 +3,7 @@ module Main where
 import Lib
 import Text.Read
 import Control.Monad.Trans.State
+import Control.Monad
 import System.Random
 import Data.Maybe
 
@@ -37,7 +38,8 @@ updateScore score Computer = computerWins score
 
 gameOver :: GameState -> Maybe Winner
 -- gameOver (GameState human computer) = if human == 16 then Just Human else if computer == 16 then Just Computer else Nothing
-gameOver (GameState human computer) = if human == 1 then Just Human else if computer == 1 then Just Computer else Nothing
+-- gameOver (GameState human computer) = if human == 1 then Just Human else if computer == 1 then Just Computer else Nothing
+gameOver (GameState human computer) = if human == 2 then Just Human else if computer == 2 then Just Computer else Nothing
 
 -- There is state here, but it is trapped in a secret global variable, so I needn't bother with it
 getComputerInput :: IO (Int, Int)
@@ -56,6 +58,13 @@ validFinger = (&&) <$> (>=1) <*> (<=5)
 -- applicative notation is sooooo helpful *_*
 validGuess :: Int -> Bool
 validGuess = (&&) <$> (>=2) <*> (<=10)
+
+-- some experiments with guard
+test :: Maybe Int
+test = do
+    i <- Just 5
+    guard (i > 10)
+    return i
 
 -- ... this looks like too much repetition o_O I could look them with a condition. hm. That would probably improve this a lot.
 -- But not sure about the error message then.
@@ -138,14 +147,22 @@ oneRound = StateT $ \state -> do
     putStrLn ("Total Score: Human: " ++ show (humanScore newScore) ++ " Computer: " ++ show (computerScore newScore)) 
     return (gameOver newScore, newScore)
 
-allRounds :: StateT GameState IO (Maybe Winner)
-allRounds = do
-    winnor <- oneRound
-    if isJust winnor then return winnor else allRounds
+-- allRounds :: StateT GameState IO (Maybe Winner)
+-- allRounds = do
+--     winnor <- oneRound
+--     if isJust winnor then return winnor else allRounds
 
 -- there is iterateWhile from some monad loops package on hackage. this probably wraps the above recursion like this:
 -- allRounds' :: StateT GameState IO Winner
 -- allRounds' = fromJust <$> iterateWhile isJust oneRound
+-- Let's see if I can write this.
+iterateWhile :: Monad m => (a -> Bool) -> m a -> m a
+iterateWhile f ma = do
+    a <- ma
+    if f a then return a else iterateWhile f ma
+
+allRounds :: StateT GameState IO (Maybe Winner)
+allRounds = iterateWhile isJust oneRound
 
 exercise1 :: IO ()
 exercise1 = do
@@ -158,7 +175,9 @@ exercise1 = do
 -- or I just add more stuff to the state. Instead of a score, I get a triple
 -- (score, last 2 moves (store as a list, so it can have zero/one moves), 3-gram table)
 -- Then, the getComputerInput thingy becomes a bit more complex, but why not.
+-- actually, this seems rather boring.
 -----
 
 main :: IO ()
 main = naiveImplementation
+-- main = exercise1
