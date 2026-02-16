@@ -133,7 +133,33 @@ instance (Monad m) => Monad (ReaderT r m) where
                         -- rmb :: r -> m b
                         let rmb = (runReaderT . aRrmb) a in rmb r
                     )
-    -- or, equivalent, in do notation: (this is what the book does)
-    -- (ReaderT rma) >>= aRrmb = ReaderT $ \r -> do
-    --     a <- rma r
-    --     runReaderT (aRrmb a) r
+
+-- or, equivalent, in do notation: (this is what the book does)
+-- (ReaderT rma) >>= aRrmb = ReaderT $ \r -> do
+--     a <- rma r
+--     runReaderT (aRrmb a) r
+
+newtype StateT s m a = StateT {runStateT :: s -> m (a, s)}
+
+instance (Functor m) => Functor (StateT s m) where
+    fmap :: (a -> b) -> StateT s m a -> StateT s m b
+    fmap f (StateT smas) = StateT $ \s -> (\(a, s) -> (f a, s)) <$> smas s -- HLS tells me I could `Bifunctor.first` this. I guess...
+
+-- TODO: why not Applicative?
+
+instance (Monad m) => Applicative (StateT s m) where
+    pure :: a -> StateT s m a
+    pure a = StateT $ \s -> pure (a, s)
+
+    (<*>) :: StateT s m (a -> b) -> StateT s m a -> StateT s m b
+    (StateT smab) <*> (StateT sma) = StateT $ \s -> do
+        (ab, s') <- smab s -- :: m (a -> b, s)
+        (a, s'') <- sma s' -- :: m (a, s) -- actually, this could just be fmapped
+        pure (ab a, s'')
+
+instance (Monad m) => Monad (StateT s m) where
+    (>>=) :: StateT s m a -> (a -> StateT s m b) -> StateT s m b
+    (StateT sma) >>= asmb = StateT $ \s -> do
+        (a, s') <- sma s
+        (b, s'') <- runStateT (asmb a) s'
+        pure (b, s'')
