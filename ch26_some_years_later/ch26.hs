@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 newtype MaybeT m a = MaybeT {runMaybeT :: m (Maybe a)}
 
 instance (Functor m) => Functor (MaybeT m) where
@@ -31,22 +33,107 @@ instance (Monad m) => Monad (MaybeT m) where
                 Nothing -> pure Nothing
                 Just a -> runMaybeT $ aMmMb a
 
-    -- MaybeT m (Maybe a) -- entferne das `MaybeT`
-    -- m (Maybe a) -- hebe die Funktion über das m, und über das a
-    -- -> m (Maybe (MaybeT m b)) -- entferne den MaybeT Konstruktur
-    -- -> m (Maybe (m (Maybe b))) -- das äußere Maybe muss weg. Wenn es ein `Just` ist, ist es einfach. Wenn es ein `Nothing` ist... kann ich vielleicht ein m bauen, das ein `pure Nothing` hat, und somit sind Dinge getauscht?
-    --
-    -- Alternativ:
-    -- MaybeT m (Maybe a) -- entferne das `MaybeT`
-    -- nimm das (Maybe a) aus dem m via (>>=) und erhalte...
-    -- erstmal ein (Maybe a), mit dem kann man jetzt unterschiedliche Dinge machen.
-    -- Nothing -> pure Nothing ? dann kriege ich glaub ich m (m Maybe b), und das >>= braucht den 2. m layer (über pure), um ihn direkt wieder einzustampfen.
-    -- Just -> damit kriege ich jetzt das a. Mit dem a kriege ich ein `MaybeT m b`. Daraus kriege ich ein `m (Maybe b)`. Also habe ich jetzt `m (m (Maybe b))`, das ich ja haben wollte.
-    --
-    -- Kann ich via join Logik irgendwie darüber nachdenken?
-    -- `MaybeT m a` heißt ich hab
-    -- m (Maybe a) ->
-    -- m (Maybe (m (Maybe a))) -- jetzt fmap über das äußere m
-    -- Nothing -> pure Nothing -> m (m (Maybe a))
-    -- bzw. m (Nothing) -> m (m (Maybe a)) -- die äußeren beiden müsste man noch joinen
-    -- Just x -> x -> m (m Maybe a)) -- die äußeren beiden müsste man noch joinen. hier ist das m schon im `x` enthalten.
+-- MaybeT m (Maybe a) -- entferne das `MaybeT`
+-- m (Maybe a) -- hebe die Funktion über das m, und über das a
+-- -> m (Maybe (MaybeT m b)) -- entferne den MaybeT Konstruktur
+-- -> m (Maybe (m (Maybe b))) -- das äußere Maybe muss weg. Wenn es ein `Just` ist, ist es einfach. Wenn es ein `Nothing` ist... kann ich vielleicht ein m bauen, das ein `pure Nothing` hat, und somit sind Dinge getauscht?
+--
+-- Alternativ:
+-- MaybeT m (Maybe a) -- entferne das `MaybeT`
+-- nimm das (Maybe a) aus dem m via (>>=) und erhalte...
+-- erstmal ein (Maybe a), mit dem kann man jetzt unterschiedliche Dinge machen.
+-- Nothing -> pure Nothing ? dann kriege ich glaub ich m (m Maybe b), und das >>= braucht den 2. m layer (über pure), um ihn direkt wieder einzustampfen.
+-- Just -> damit kriege ich jetzt das a. Mit dem a kriege ich ein `MaybeT m b`. Daraus kriege ich ein `m (Maybe b)`. Also habe ich jetzt `m (m (Maybe b))`, das ich ja haben wollte.
+--
+-- Kann ich via join Logik irgendwie darüber nachdenken?
+-- `MaybeT m a` heißt ich hab
+-- m (Maybe a) ->
+-- m (Maybe (m (Maybe a))) -- jetzt fmap über das äußere m
+-- Nothing -> pure Nothing -> m (m (Maybe a))
+-- bzw. m (Nothing) -> m (m (Maybe a)) -- die äußeren beiden müsste man noch joinen
+-- Just x -> x -> m (m Maybe a)) -- die äußeren beiden müsste man noch joinen. hier ist das m schon im `x` enthalten.
+
+newtype EitherT e m a = EitherT {runEitherT :: m (Either e a)}
+
+instance (Functor m) => Functor (EitherT e m) where
+    fmap :: (a -> b) -> EitherT e m a -> EitherT e m b
+    fmap f (EitherT me) = EitherT $ (fmap . fmap) f me
+
+instance (Applicative m) => Applicative (EitherT e m) where
+    pure :: a -> EitherT e m a
+    pure x = EitherT (pure (Right x))
+
+    (<*>) :: EitherT e m (a -> b) -> EitherT e m a -> EitherT e m b
+    (EitherT me1) <*> (EitherT me2) = EitherT $ pure (<*>) <*> me1 <*> me2
+
+instance (Monad m) => Monad (EitherT e m) where
+    return = pure
+    (>>=) :: EitherT e m a -> (a -> EitherT e m b) -> EitherT e m b
+    (EitherT me) >>= f = EitherT $ me >>= g
+      where
+        g (Left l) = pure $ Left l
+        g (Right r) = runEitherT $ f r
+
+swapEitherT :: (Functor m) => EitherT e m a -> EitherT a m e
+swapEitherT (EitherT me) = EitherT $ fmap swapEither me
+
+swapEither :: Either e a -> Either a e
+swapEither (Left l) = Right l
+swapEither (Right r) = Left r
+
+eitherT :: (Monad m) => (a -> m c) -> (b -> m c) -> EitherT a m b -> m c
+eitherT f g (EitherT me) =
+    me
+        >>= ( \case
+                (Left l) -> f l
+                (Right r) -> g r
+            )
+
+-- Let's reduce this on either, as above?
+eitherT' :: (Monad m) => (a -> m c) -> (b -> m c) -> EitherT a m b -> m c
+eitherT' f g (EitherT me) = me >>= either' f g
+
+either' :: (a -> c) -> (b -> c) -> Either a b -> c
+either' f _ (Left l) = f l
+either' _ g (Right r) = g r
+
+newtype ReaderT r m a = ReaderT {runReaderT :: r -> m a}
+
+instance (Functor m) => Functor (ReaderT r m) where
+    fmap :: (a -> b) -> ReaderT r m a -> ReaderT r m b
+    fmap f (ReaderT rma) = ReaderT (fmap f . rma) -- thank you HLS, for this pointfree thingy I guess
+    -- fmap f (ReaderT rma) = ReaderT $ \r -> f <$> rma r -- or like this
+    -- fmap f (ReaderT rma) = ReaderT $ (fmap . fmap) f rma -- or like this, because ((->)e) implements Functor I guess
+
+instance (Applicative m) => Applicative (ReaderT r m) where
+    pure :: a -> ReaderT r m a
+    pure x = ReaderT $ const (pure x)
+
+    -- pure = ReaderT . pure . pure -- or like this because ((->)e) implements Applicative I guess
+
+    -- pure x = ReaderT $ \r -> pure x -- or like this
+
+    (<*>) :: ReaderT r m (a -> b) -> ReaderT r m a -> ReaderT r m b
+    (ReaderT rmab) <*> (ReaderT rma) =
+        ReaderT $ \r ->
+            let mab = rmab r
+                ma = rma r
+             in mab <*> ma
+
+-- (ReaderT rmab) <*> (ReaderT rma) = ReaderT $ (<*>) <$> rmab <*> rma -- or like this again...
+
+-- ReaderT $ \r -> rmab r <*> rma r -- shorter alternative
+
+instance (Monad m) => Monad (ReaderT r m) where
+    (>>=) :: ReaderT r m a -> (a -> ReaderT r m b) -> ReaderT r m b
+    (ReaderT rma) >>= aRrmb = ReaderT $ \r ->
+        let ma = rma r
+         in ma
+                >>= ( \a ->
+                        -- rmb :: r -> m b
+                        let rmb = (runReaderT . aRrmb) a in rmb r
+                    )
+    -- or, equivalent, in do notation: (this is what the book does)
+    -- (ReaderT rma) >>= aRrmb = ReaderT $ \r -> do
+    --     a <- rma r
+    --     runReaderT (aRrmb a) r
