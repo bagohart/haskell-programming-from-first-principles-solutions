@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE TupleSections #-}
 
 newtype MaybeT m a = MaybeT {runMaybeT :: m (Maybe a)}
 
@@ -190,3 +191,13 @@ instance MonadTrans (ReaderT r) where
 -- ->
 -- \r -> ma :: r -> m a
 -- ReaderT $ \r -> m a :: ReaderT r m a
+
+instance MonadTrans (EitherT e) where
+    lift :: (Monad m) => m a -> EitherT e m a
+    -- lift ma = EitherT $ fmap Right ma -- pointfull version
+    lift = EitherT . fmap Right
+
+instance MonadTrans (StateT s) where
+    lift :: (Monad m) => m a -> StateT s m a
+    -- lift ma = StateT $ \s -> (,s) <$> ma -- alternative with TupleSections extension
+    lift ma = StateT $ \s -> fmap (\a -> (a, s)) ma
