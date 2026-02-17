@@ -62,9 +62,9 @@ instance (Monad m) => Monad (IdentityT m) where
     (>>=) :: IdentityT m a -> (a -> IdentityT m b) -> IdentityT m b
     (IdentityT ma) >>= f =
         -- let aimb :: a
-            -- let aimb = join (fmap (runIdentityT . f) ma)
-            let aimb = ma >>= runIdentityT . f
-        in IdentityT aimb
+        -- let aimb = join (fmap (runIdentityT . f) ma)
+        let aimb = ma >>= runIdentityT . f
+         in IdentityT aimb
 
 -- Equivalent implementation in the `transformers` library
 -- m >>= k = IdentityT $ runIdentityT . k =<< runIdentityT m
@@ -81,3 +81,16 @@ class MonadTrans t where
 instance MonadTrans IdentityT where
     lift :: (Monad m) => m a -> IdentityT m a
     lift ma = IdentityT $ ma
+
+class (Monad m) => MonadIO m where
+    -- \| Lift a computation from the 'IO' monad.
+    liftIO :: IO a -> m a
+
+instance (MonadIO m)  => MonadIO (IdentityT m) where
+    liftIO :: IO a -> IdentityT m a
+    liftIO ioa = IdentityT $ liftIO ioa
+    -- liftIO = IdentityT . liftIO -- pointfree alternative
+    -- liftIO ioa = IdentityT $ ((liftIO ioa)::Int) -- use this to see the types
+    -- ioa :: IO a
+    -- liftIO ioa :: m a
+    -- IdentityT $ liftIO ioa :: IdentityT m a

@@ -201,3 +201,39 @@ instance MonadTrans (StateT s) where
     lift :: (Monad m) => m a -> StateT s m a
     -- lift ma = StateT $ \s -> (,s) <$> ma -- alternative with TupleSections extension
     lift ma = StateT $ \s -> fmap (\a -> (a, s)) ma
+
+class (Monad m) => MonadIO m where
+    -- \| Lift a computation from the 'IO' monad.
+    liftIO :: IO a -> m a
+
+instance (MonadIO m) => MonadIO (EitherT e m) where
+    liftIO :: IO a -> EitherT e m a
+    liftIO ioa = EitherT $ liftIO (Right <$> ioa) -- this sorta reimplements lift from MonadTrans :O
+    -- liftIO = lift . liftIO -- the solution, but... what?
+    -- liftIO ioa = lift ((liftIO ioa)::Int)
+    -- liftIO ioa :: m a
+    -- lift (liftIO ioa) :: EitherT e m a
+    -- liftIO ioa = EitherT $ Right <$> liftIO ioa -- alternative, this fmaps over one more layer!
+    -- liftIO ioa = EitherT $ Right <$> ((liftIO ioa)::Int)
+    -- liftIO ioa = Right <$> EitherT $ liftIO ioa -- this doesn't work, cannot apply EitherT on non-`Right`
+
+instance (MonadIO m) => MonadIO (MaybeT m) where
+    liftIO :: IO a -> MaybeT m a
+    -- liftIO = lift . liftIO -- entered without thinking. this works. why?
+    liftIO ioa = MaybeT $ liftIO $ Just <$> ioa
+
+-- liftIO ioa :: m a
+-- lift (liftIO ioa) :: MaybeT m a
+
+instance (MonadIO m) => MonadIO (ReaderT r m) where
+    liftIO :: IO a -> ReaderT r m a
+    -- liftIO = lift . liftIO -- srsly?
+    -- liftIO ioa :: m a
+    -- \r -> liftIO ioa :: r -> m a
+    -- ReaderT $ ... :: ReaderT r m a
+    liftIO ioa = ReaderT $ \r -> liftIO ioa
+
+instance (MonadIO m) => MonadIO (StateT s m) where
+    liftIO :: IO a -> StateT s m a
+    -- liftIO = lift . liftIO -- I guess...
+    liftIO ioa = StateT $ \s -> liftIO ((,s) <$> ioa)
