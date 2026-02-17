@@ -163,3 +163,30 @@ instance (Monad m) => Monad (StateT s m) where
         (a, s') <- sma s
         (b, s'') <- runStateT (asmb a) s'
         pure (b, s'')
+
+-- and now for MonadTrans
+
+class MonadTrans t where
+    -- | Lift a computation from the argument monad
+    -- to the constructed monad.
+    lift :: (Monad m) => m a -> t m a
+
+instance MonadTrans MaybeT where
+    lift :: (Monad m) => m a -> MaybeT m a
+    lift ma = MaybeT $ Just <$> ma
+
+-- lift ma = MaybeT $ pure <$> ma -- alternative without `Just`, but we know we have MaybeT, so why not use it
+-- lift = MaybeT . fmap Just -- pointfree alternative
+
+instance MonadTrans (ReaderT r) where
+    lift :: (Monad m) => m a -> ReaderT r m a
+    lift ma = ReaderT $ \r -> ma
+
+-- lift ma = ReaderT $ const ma -- more pointfree alternative
+-- lift = ReaderT . const       -- most pointfree alternative
+
+-- Types
+-- ma :: m a
+-- ->
+-- \r -> ma :: r -> m a
+-- ReaderT $ \r -> m a :: ReaderT r m a
