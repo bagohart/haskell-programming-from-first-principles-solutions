@@ -82,6 +82,3 @@ runQc = quickCheck prop_additionGreater
 
 runQc2 :: IO ()
 runQc2 = quickCheck prop_additionBroken
-
--- als nächstes: Morce Code Beispiel.
--- Guck das mal durch, da geht es auch darum, wie tests in stack abgebildet werden.
