@@ -88,3 +88,8 @@ unitOfSuccess' = parseString (integer <* eof) mempty "123abc" -- exercise
 -- marshalling: aeson, lazy vs strict bytestrings,
 --
 -- ... das sieht alles eigentlich noch ziemlich praktisch aus. ist wahrscheinlich ne gute Idee, das mal in Ruhe noch durchzugehen. Die exercises am Ende sind vielleicht nicht so relevant, aber der Rest sieht praktisch und übertragbar aus.
+--
+-- ... hm. hab es mal in ruhe durchgelesen, aber wirklich hilfreich sind die erklärungen nicht. zu aeson gibt es code-beispiele, aber auch nicht viel an Erklärungen. Die magischen Symbole werden auch unerklärt gelassen.
+-- Das hat jetzt eigentlich nicht viel gebracht.
+-- Das quasiquoting ist net...
+-- => damit hat haskell buch jetzt glaub ich fertig.
